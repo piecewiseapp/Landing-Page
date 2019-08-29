@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+
+<style>
+    .counties {
+        fill: rgb(1, 2, 2);
+    }
+
+    /* .counties :hover {
+        fill: darkred;
+    } */
+
+    .county-borders {
+        fill: none;
+        stroke: #000000;
+        stroke-width: 0.1px;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+        pointer-events: none;
+    }
+
+    .legend {
+        position: absolute;
+        left: 20px;
+        top: 30px;
+        padding: 5px;
+        font: 30px sans-serif;
+        box-shadow: 2px 2px 1px #888;
+        font-weight: bold;
+        text-anchor: middle;
+    }
+</style>
+
+<svg width="960" height="600"></svg>
+<script src="https://d3js.org/d3.v4.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://d3js.org/topojson.v2.min.js"></script>
+
+<script>
+
+
+    var svg = d3.select("svg");
+    var path = d3.geoPath();
+    var data = d3.map();
+    var colorScale = d3.scaleThreshold()
+        .domain([3, 6, 9, 12, 15, 18, 21, 24, 27])
+        .range(d3.schemeBlues[9]);
+
+    // var legend = svg.selectAll('g.legendEntry')
+    //     .data(colorScale.range().reverse())
+    //     .enter()
+    //     .append('g').attr('class', 'legendEntry');
+
+    d3.queue()
+        .defer(d3.json, "https://d3js.org/us-10m.v1.json")
+        .defer(d3.csv, "https://gist.githubusercontent.com/andrescamperi/c3ecd362c8979ff584821fd160fcfbc7/raw/b39d605573bc6ee655437b8170a4d06c882218c7/default_data.csv", function (d) { data.set(d.code, +d.num + 3); })
+        .await(draw);
+
+    function draw(error, us) {
+
+        if (error) throw error;
+
+        svg.append("g")
+            .attr("class", "counties")
+            .selectAll("path")
+            .data(topojson.feature(us, us.objects.counties).features)
+            .enter()
+            .append("path")
+            .attr("d", path)
+            .attr("fill", function (d) {
+                d.total = data.get(d.id) || 0;
+                return colorScale(d.total);
+            });
+
+        svg.append("path")
+            .attr("class", "county-borders")
+            .attr("d", path(topojson.mesh(us, us.objects.counties, function (a, b) { return a !== b; })))
+
+        // svg.append("label")
+        //     .attr("class", "caption")
+        //     .attr("y", -6)
+        //     .attr("fill", "#000")
+        //     .attr("text-anchor", "start")
+        //     .attr("font-weight", "bold")
+        //     .text("this is some text");
+
+
+
+    };
+
+</script>
